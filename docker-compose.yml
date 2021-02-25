@@ -1,0 +1,49 @@
+version: '3'
+services:
+  # ROS MASTER (ROSCORE)
+  rosmaster:
+    image: ros:noetic-ros-core
+    container_name: rosmaster
+    hostname: rosmaster
+    ports:
+        - "11311:11311"
+    command: roscore
+
+  # ROS RVIZ
+  rviz:
+    build: ros-rviz/.
+    container_name: rviz
+    hostname: rviz
+    volumes:
+      - "/tmp/.X11-unix:/tmp/.X11-unix"
+    environment:
+        - "DISPLAY=$DISPLAY"
+        - "ROS_HOSTNAME=rviz"
+        - "ROS_MASTER_URI=http://rosmaster:11311"
+    command: rviz -d slamtoolbox.rviz
+    depends_on:
+      - rosmaster
+
+  # ROS Slamtoolbox
+  slamtoolbox:
+    build: ros-slamtoolbox/.
+    container_name: slamtoolbox
+    hostname: slamtoolbox
+    environment:
+        - "ROS_HOSTNAME=slamtoolbox"
+        - "ROS_MASTER_URI=http://rosmaster:11311"
+    command: roslaunch slam_toolbox offline.launch
+    depends_on:
+      - rosmaster
+
+  ros-bag:
+    build: ros-bag/.
+    container_name: ros-bag
+    hostname: ros-bag
+    environment:
+        - "ROS_HOSTNAME=ros-bag"
+        - "ROS_MASTER_URI=http://rosmaster:11311"
+    depends_on:
+      - rosmaster
+      - slamtoolbox
+      - rviz
